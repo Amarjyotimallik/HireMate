@@ -282,6 +282,28 @@ def _generate_metric_explanations(
         explanations["risk_preference"] = (
             f"Score: {risk_preference}%. Based on timing and choice patterns."
         )
+
+    # --- Behavioral Consistency Explanation ---
+    focus_loss = aggregate_metrics.get("focus_loss_count", 0)
+    pastes = aggregate_metrics.get("paste_count", 0)
+    copies = aggregate_metrics.get("copy_count", 0)
+    idles = aggregate_metrics.get("long_idle_count", 0)
+    
+    # Calculate resilience for explanation matching - aligned with _compute_aggregate_metrics
+    resilience_exp = max(0, 100 - (focus_loss * 10) - (pastes * 20) - (copies * 5))
+    
+    reasons_list = []
+    if focus_loss > 0: reasons_list.append(f"{focus_loss} focus loss(es)")
+    if pastes > 0: reasons_list.append(f"{pastes} paste(s)")
+    if copies > 0: reasons_list.append(f"{copies} copy event(s)")
+    if idles > 0: reasons_list.append(f"{idles} long idle(s)")
+    
+    explanations["behavioral_consistency"] = (
+        f"Measures adherence to assessment patterns. Consistency: {resilience_exp:.0f}%. "
+        f"Adjusted for: {', '.join(reasons_list) if reasons_list else 'No anomalous patterns detected.'}"
+    )
+    # Also add for backward compatibility
+    explanations["cheating_resilience"] = explanations["behavioral_consistency"]
     
     return explanations
 
@@ -764,6 +786,9 @@ async def _get_current_question(attempt: Dict, events: List[Dict]) -> Optional[D
     # Find candidate's current selection from events
     candidate_selection = None
     reasoning_text = None
+    focus_loss_count = 0
+    paste_count = 0
+    copy_count = 0
     
     # Filter events for current task and find latest option_selected/option_changed
     task_events = [e for e in events if e.get("task_id") == current_task_id]
@@ -776,6 +801,13 @@ async def _get_current_question(attempt: Dict, events: List[Dict]) -> Optional[D
         
         if event_type == "reasoning_updated" and not reasoning_text:
             reasoning_text = payload.get("reasoning_text", "")
+            
+        if event_type == "focus_lost":
+            focus_loss_count += 1
+        elif event_type == "paste_detected":
+            paste_count += 1
+        elif event_type == "copy_detected":
+            copy_count += 1
     
     return {
         "task_id": current_task_id,
@@ -786,6 +818,9 @@ async def _get_current_question(attempt: Dict, events: List[Dict]) -> Optional[D
         "options": options,
         "candidate_selection": candidate_selection,
         "reasoning_text": reasoning_text,
+        "focus_loss_count": focus_loss_count,
+        "paste_count": paste_count,
+        "copy_count": copy_count,
     }
 
 def _compute_resume_comparison(candidate_info: Dict, skill_profile: Dict, per_task_metrics: List[Dict] = None) -> Dict:
@@ -1292,6 +1327,7 @@ async def _compute_per_task_metrics(events: List[Dict], task_ids: List[str], ass
             "session_continuity_score": continuity_score,
             
             "explanation_word_count": word_count,
+            "explanation_detail_score": explanation_detail_score,
             "reasoning_depth": explanation_detail_normalized,
             "observed_pattern": pattern,
             "recruiter_summary": summary,
@@ -1390,9 +1426,14 @@ def _compute_aggregate_metrics(per_task_metrics: List[Dict], total_time: float) 
         "idle_time_level": round(avg_idle_time, 1),  # CHANGED: actual seconds, not % bucket
         "idle_time_label": idle_time_label,  # NEW: categorical label
         "total_explanation_words": total_explanation_words,
-        "reasoning_depth": round(reasoning_depth, 2),
+        "reasoning_depth": round(reasoning_depth * 100, 2),
         "cheating_resilience": int(cheating_resilience),
         "tasks_completed": tasks_completed,
+        "focus_loss_count": total_focus_loss,
+        "paste_count": total_pastes,
+        "copy_count": total_copies,
+        "paste_detected": total_pastes > 0,
+        "copy_detected": total_copies > 0,
     }
 
 

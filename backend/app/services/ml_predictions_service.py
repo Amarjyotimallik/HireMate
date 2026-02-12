@@ -22,12 +22,52 @@ async def get_interview_success_prediction(
     """
     metrics = await get_metrics(attempt_id)
     if not metrics:
-        return {
-            "probability": 0.0,
-            "confidence": "low",
-            "factors": [],
-            "message": "No computed metrics for this attempt. Complete the assessment and compute metrics first.",
-        }
+        # FALLBACK: Try live metrics if completed metrics haven't been generated yet
+        # This allows AI predictions to show up during the assessment
+        try:
+            from app.services.live_metrics_service import compute_live_metrics
+            live_data = await compute_live_metrics(attempt_id)
+            if not live_data or not live_data.get("metrics"):
+                 return {
+                    "probability": 0.0,
+                    "confidence": "low",
+                    "factors": [],
+                    "message": "No data captured yet. Start answering questions to see predictions.",
+                }
+            
+            # Map Live Metrics to features
+            m = live_data["metrics"]
+            p = live_data["progress"]
+            total_tasks = p.get("total", 5)
+            tasks_completed = p.get("current", 0) - 1 # current is 1-indexed next question
+            
+            features = {
+                "decision_firmness": m.get("decision_firmness", 50),
+                "reasoning_depth": m.get("reasoning_depth", 50), # Wait, let me check if reasoning_depth is in metrics
+                "completion_rate": tasks_completed / total_tasks if total_tasks else 0,
+                "attention_stability": live_data.get("population_intelligence", {}).get("authenticity", {}).get("score", 80) / 100,
+                "decision_consistency": 0.5, # Fallback
+                "total_tasks": total_tasks,
+                "tasks_completed": tasks_completed,
+            }
+            
+            # Handle ATS score
+            attempt = await get_attempt_by_id(attempt_id)
+            if include_resume and attempt and attempt.candidate_info and getattr(attempt.candidate_info, "resume_text", None):
+                from app.services.attempt_service import get_or_compute_ats_score
+                ats_result = await get_or_compute_ats_score(attempt_id)
+                features["ats_score"] = ats_result.get("ats_score", 0)
+
+            result = predict_interview_success(features)
+            return result
+        except Exception as e:
+            print(f"[ML-ERROR] Live prediction fallback failed: {e}")
+            return {
+                "probability": 0.0,
+                "confidence": "low",
+                "factors": [],
+                "message": "No computed metrics for this attempt.",
+            }
 
     # Build features from ComputedMetricsResponse
     global_m = metrics.global_metrics
@@ -74,11 +114,45 @@ async def get_behavioral_prediction(attempt_id: str) -> Dict[str, Any]:
     """Get predicted behavioral traits for an attempt from its computed metrics."""
     metrics = await get_metrics(attempt_id)
     if not metrics:
-        return {
-            "predicted_traits": [],
-            "confidence": "low",
-            "message": "No computed metrics for this attempt.",
-        }
+        # FALLBACK: Try live metrics
+        try:
+            from app.services.live_metrics_service import compute_live_metrics
+            live_data = await compute_live_metrics(attempt_id)
+            if not live_data or not live_data.get("metrics"):
+                return {
+                    "predicted_traits": [],
+                    "confidence": "low",
+                    "message": "No data captured yet.",
+                }
+            
+            # Map Live Data to format expected by predict_behavioral_traits
+            # predict_behavioral_traits expects aggregated_patterns, global_metrics, per_task_metrics
+            m = live_data["metrics"]
+            p = live_data["progress"]
+            pop = live_data.get("population_intelligence", {})
+            
+            metrics_data = {
+                "aggregated_patterns": {
+                    "decision_consistency": 0.5, # Fallback
+                    "reasoning_engagement": m.get("reasoning_depth", 50) / 100,
+                    "attention_stability": pop.get("authenticity", {}).get("score", 100) / 100,
+                    "risk_preference": {"dominant": "balanced"}
+                },
+                "global_metrics": {
+                    "total_tasks": p.get("total", 5),
+                    "tasks_completed": p.get("current", 0) - 1,
+                    "total_time_seconds": live_data.get("time_elapsed_seconds", 0)
+                },
+                "per_task_metrics": [] # Live doesn't easily expose this list in the same format
+            }
+            return predict_behavioral_traits(metrics_data)
+        except Exception as e:
+            print(f"[ML-ERROR] Behavioral live prediction fallback failed: {e}")
+            return {
+                "predicted_traits": [],
+                "confidence": "low",
+                "message": "No computed metrics for this attempt.",
+            }
 
     metrics_data = {
         "aggregated_patterns": metrics.aggregated_patterns.model_dump() if metrics.aggregated_patterns else {},

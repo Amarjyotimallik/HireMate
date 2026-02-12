@@ -30,6 +30,7 @@ import {
     Medal,
     EyeOff,
     Clipboard,
+    Copy,
     ChevronDown,
     ChevronUp,
     Trash2,
@@ -163,6 +164,7 @@ const LiveAssessment = () => {
     const [interviewSuccess, setInterviewSuccess] = useState(null);
     const [behavioralTraits, setBehavioralTraits] = useState(null);
     const [atsScore, setAtsScore] = useState(null);
+    const [recentEvents, setRecentEvents] = useState([]); // Real-time behavioral log
     const wsRef = useRef(null);
     const reconnectTimeoutRef = useRef(null);
     const selectedAttemptIdRef = useRef(null); // Ref to avoid stale closure in WebSocket
@@ -274,6 +276,7 @@ const LiveAssessment = () => {
             setLiveData(null);
             setCurrentQuestion(null);
             setViewingQuestionIndex(null);
+            setRecentEvents([]); // Clear activity feed when switching candidates
             fetchLiveMetrics(selectedAttemptId);
         }
     }, [selectedAttemptId]);
@@ -408,6 +411,19 @@ const LiveAssessment = () => {
                 const msg = JSON.parse(event.data);
                 const currentAttemptId = selectedAttemptIdRef.current;
 
+                // Handle real-time event logging for the feed
+                if (msg.type === 'event_logged') {
+                    const behavioralEvents = ['paste_detected', 'copy_detected', 'focus_lost', 'focus_gained', 'idle_detected'];
+                    if (behavioralEvents.includes(msg.event_type)) {
+                        setRecentEvents(prev => [{
+                            id: msg.event_id,
+                            type: msg.event_type,
+                            timestamp: msg.timestamp,
+                            payload: msg.payload || {}
+                        }, ...prev].slice(0, 30));
+                    }
+                }
+
                 // Throttle metrics fetches to prevent flooding
                 const now = Date.now();
                 if (['event_logged', 'metrics_update'].includes(msg.type)) {
@@ -463,6 +479,11 @@ const LiveAssessment = () => {
             idle_time: 0,
             reasoning_depth: 0,
             cheating_resilience: 100,
+            focus_loss_count: 0,
+            paste_count: 0,
+            copy_count: 0,
+            paste_detected: false,
+            copy_detected: false,
         },
         skill_profile: {
             problem_solving: 0,
@@ -805,7 +826,7 @@ const LiveAssessment = () => {
                                             </div>
                                             {displayData.metrics.cheating_resilience != null && (
                                                 <div className="text-[10px] mt-0.5" style={{ color: COLORS.textMuted }}>
-                                                    🛡 {displayData.metrics.cheating_resilience}% integrity
+                                                    🛡 {displayData.metrics.cheating_resilience}% behavioral alignment
                                                 </div>
                                             )}
                                         </div>
@@ -840,7 +861,7 @@ const LiveAssessment = () => {
                                         <div className="flex items-center gap-2">
                                             <AlertCircle className="w-4 h-4" style={{ color: COLORS.danger }} />
                                             <h4 className="text-xs font-semibold uppercase tracking-wider" style={{ color: COLORS.danger }}>
-                                                Anti-Cheat Flags
+                                                Behavioral Anomalies
                                             </h4>
                                             {/* Summary Badge when collapsed */}
                                             {!showAntiCheat && (
@@ -1211,7 +1232,7 @@ const LiveAssessment = () => {
                                             })
                                     ) : activeAssessments.length > 0 ? (
                                         <div className="flex flex-col items-center justify-center py-8 gap-3">
-                                            <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS.warningLight, border: `2px dashed ${COLORS.warning}` }}>
+                                            <div className="w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center" style={{ borderColor: COLORS.warning }}>
                                                 <Trophy className="w-6 h-6" style={{ color: COLORS.warning, opacity: 0.6 }} />
                                             </div>
                                             <div className="text-center">
@@ -1450,6 +1471,41 @@ const LiveAssessment = () => {
                                                     </div>
                                                 </div>
 
+                                                {/* Behavioral Anomalies Alert Box - High Visibility */}
+                                                {hasStarted && (displayData.metrics.paste_detected || displayData.metrics.copy_detected || displayData.metrics.focus_loss_count > 0) && (
+                                                    <div className="px-5 py-4 rounded-2xl border flex items-start gap-4 transition-all animate-in fade-in slide-in-from-left-4" style={{ backgroundColor: COLORS.dangerBg, borderColor: COLORS.danger }}>
+                                                        <div className="p-3 rounded-xl" style={{ backgroundColor: COLORS.cardBg, boxShadow: '0 4px 12px rgba(239, 68, 68, 0.1)' }}>
+                                                            <ShieldAlert className="w-6 h-6" style={{ color: COLORS.danger }} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <h3 className="text-sm font-bold" style={{ color: COLORS.danger }}>Behavioral Anomalies Detected</h3>
+                                                                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: COLORS.cardBg, color: COLORS.danger, border: `1px solid ${COLORS.danger}` }}>High Priority</span>
+                                                            </div>
+                                                            <p className="text-xs leading-relaxed mb-2" style={{ color: COLORS.textSecondary }}>
+                                                                {displayData.metric_explanations?.behavioral_consistency || "System has detected patterns that may indicate external tool usage or multi-tasking."}
+                                                            </p>
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {displayData.metrics.paste_count > 0 && (
+                                                                    <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold" style={{ backgroundColor: COLORS.danger + '15', color: COLORS.danger }}>
+                                                                        <Clipboard className="w-3 h-3" /> {displayData.metrics.paste_count}x Paste
+                                                                    </span>
+                                                                )}
+                                                                {displayData.metrics.copy_count > 0 && (
+                                                                    <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold" style={{ backgroundColor: COLORS.danger + '15', color: COLORS.danger }}>
+                                                                        <Copy className="w-3 h-3" /> {displayData.metrics.copy_count}x Copy
+                                                                    </span>
+                                                                )}
+                                                                {displayData.metrics.focus_loss_count > 0 && (
+                                                                    <span className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold" style={{ backgroundColor: COLORS.danger + '15', color: COLORS.danger }}>
+                                                                        <EyeOff className="w-3 h-3" /> {displayData.metrics.focus_loss_count}x Tab Switch
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {/* ─── Behavioral: grade + metrics (only when candidate has started) ─── */}
                                                 <div className="p-6 rounded-2xl border shadow-sm" style={{ background: `linear-gradient(135deg, ${COLORS.cardBg} 0%, ${COLORS.accentLight} 30%, ${COLORS.cardBg} 100%)`, borderColor: COLORS.border }}>
                                                     {hasStarted ? (
@@ -1490,7 +1546,7 @@ const LiveAssessment = () => {
                                                                     <div className="flex items-center gap-2 px-4 py-2 rounded-xl border" style={{ backgroundColor: displayData.metrics.cheating_resilience > 80 ? COLORS.successLight : displayData.metrics.cheating_resilience > 50 ? COLORS.warningLight : COLORS.dangerBg, borderColor: COLORS.border }}>
                                                                         <ShieldAlert className="w-4 h-4 shrink-0" style={{ color: displayData.metrics.cheating_resilience > 80 ? COLORS.success : displayData.metrics.cheating_resilience > 50 ? COLORS.warning : COLORS.danger }} />
                                                                         <div>
-                                                                            <div className="text-[10px] font-medium uppercase" style={{ color: COLORS.textMuted }}>Integrity</div>
+                                                                            <div className="text-[10px] font-medium uppercase" style={{ color: COLORS.textMuted }}>Behavioral alignment</div>
                                                                             <div className="text-lg font-bold" style={{ color: displayData.metrics.cheating_resilience > 80 ? COLORS.success : displayData.metrics.cheating_resilience > 50 ? COLORS.warning : COLORS.danger }}>{displayData.metrics.cheating_resilience}%</div>
                                                                         </div>
                                                                     </div>
@@ -1508,13 +1564,7 @@ const LiveAssessment = () => {
                                                                             <div className="text-sm font-bold" style={{ color: COLORS.textPrimary }}>{displayData.metrics.decision_speed}</div>
                                                                         </div>
                                                                     </div>
-                                                                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl border" style={{ backgroundColor: COLORS.cardBgAlt, borderColor: COLORS.border }}>
-                                                                        <AlignLeft className="w-4 h-4 shrink-0" style={{ color: COLORS.success }} />
-                                                                        <div>
-                                                                            <div className="text-[10px] font-medium uppercase" style={{ color: COLORS.textMuted }}>Reasoning</div>
-                                                                            <div className="text-lg font-bold" style={{ color: COLORS.success }}>{displayData.metrics.reasoning_depth || 0}%</div>
-                                                                        </div>
-                                                                    </div>
+
                                                                 </div>
                                                             </div>
 
@@ -1526,11 +1576,10 @@ const LiveAssessment = () => {
                                                                 const qDone = displayData.progress?.current ?? 0;
                                                                 const qTotal = displayData.progress?.total ?? 5;
                                                                 const confidenceNote = qTotal > 0 ? `Based on ${qDone} of ${qTotal} questions` : 'Waiting for responses';
-                                                                const reasoning = displayData.metrics.reasoning_depth ?? 0;
                                                                 const firmness = displayData.metrics.decision_firmness ?? 0;
-                                                                const integrity = displayData.metrics.cheating_resilience ?? 100;
-                                                                const strength = reasoning >= 70 ? 'Strong reasoning' : firmness >= 80 ? 'Stable choices' : integrity >= 90 ? 'Clean session' : 'Engaged with all options';
-                                                                const consideration = integrity < 80 ? 'Note: some tab or paste activity' : firmness < 60 ? 'Changed answers frequently' : qDone < 3 ? 'Early data — more questions add confidence' : null;
+                                                                const behavioralAlignment = displayData.metrics.cheating_resilience ?? 100;
+                                                                const strength = firmness >= 80 ? 'Stable choices' : behavioralAlignment >= 90 ? 'Consistent behavior' : 'Engaged with all options';
+                                                                const consideration = behavioralAlignment < 80 ? 'Note: some tab or paste activity' : firmness < 60 ? 'Changed answers frequently' : qDone < 3 ? 'Early data — more questions add confidence' : null;
                                                                 return (
                                                                     <>
                                                                         <div className="pt-3 border-t" style={{ borderColor: COLORS.border }}>
@@ -1602,7 +1651,7 @@ const LiveAssessment = () => {
                                                                 Waiting for candidate to answer questions
                                                             </p>
                                                             <p className="text-xs text-center max-w-[260px]" style={{ color: COLORS.textMuted }}>
-                                                                Grade, integrity, reasoning and other behavioral metrics will appear here once they respond.
+                                                                Grade, integrity, and other behavioral metrics will appear here once they respond.
                                                             </p>
                                                         </div>
                                                     )}
@@ -1749,20 +1798,6 @@ const LiveAssessment = () => {
                                                                         <span className="text-xl font-bold" style={{ color: COLORS.purple }}>{displayData.metrics.decision_firmness}%</span>
                                                                     </div>
 
-                                                                    {/* Reasoning Depth (New) */}
-                                                                    <div className="p-3 rounded-lg border" style={{ background: `linear-gradient(135deg, ${COLORS.cardBg} 0%, ${COLORS.successLight} 100%)`, borderColor: COLORS.success }}>
-                                                                        <div className="flex items-center gap-2 mb-1">
-                                                                            <AlignLeft className="w-4 h-4" style={{ color: COLORS.success }} />
-                                                                            <TermTooltip
-                                                                                term="reasoningDepth"
-                                                                                dynamicExplanation="Measures explanation quality based on word count and logical connectors."
-                                                                            >
-                                                                                <span className="text-xs" style={{ color: COLORS.textMuted }}>Reasoning Depth</span>
-                                                                            </TermTooltip>
-                                                                        </div>
-                                                                        <span className="text-xl font-bold" style={{ color: COLORS.success }}>{displayData.metrics.reasoning_depth || 0}%</span>
-                                                                    </div>
-
                                                                     {/* Cheating Resilience (New) */}
                                                                     <div className="p-3 rounded-lg border" style={{
                                                                         background: `linear-gradient(135deg, ${COLORS.cardBg} 0%, ${displayData.metrics.cheating_resilience > 80 ? COLORS.successLight : displayData.metrics.cheating_resilience > 50 ? COLORS.warningLight : COLORS.dangerBg} 100%)`,
@@ -1773,10 +1808,10 @@ const LiveAssessment = () => {
                                                                                 color: displayData.metrics.cheating_resilience > 80 ? COLORS.success : displayData.metrics.cheating_resilience > 50 ? COLORS.warning : COLORS.danger
                                                                             }} />
                                                                             <TermTooltip
-                                                                                term="cheatingResilience"
-                                                                                dynamicExplanation="Measures adherence to assessment integrity. Decreases with tab switching, pasting text, or copying questions."
+                                                                                term="behavioralConsistency"
+                                                                                dynamicExplanation={displayData.metric_explanations?.behavioral_consistency}
                                                                             >
-                                                                                <span className="text-xs" style={{ color: COLORS.textMuted }}>Integrity Score</span>
+                                                                                <span className="text-xs" style={{ color: COLORS.textMuted }}>Behavioral Consistency</span>
                                                                             </TermTooltip>
                                                                         </div>
                                                                         <span className="text-xl font-bold" style={{
@@ -1811,13 +1846,10 @@ const LiveAssessment = () => {
                                                                                         <div key={idx} className="flex items-center justify-between py-1.5 px-2 rounded text-xs transition-colors hover:bg-opacity-80" style={{ backgroundColor: COLORS.cardBg }}>
                                                                                             <div className="flex items-center gap-2">
                                                                                                 <span className="font-medium" style={{ color: COLORS.textSecondary }}>Q{idx + 1}</span>
-                                                                                                {task.focus_loss_count > 0 && <EyeOff size={12} className="text-red-500" title={`Focus Lost: ${task.focus_loss_count}x`} />}
-                                                                                                {task.paste_detected && <Clipboard size={12} className="text-red-500" title={`Paste Detected (${task.paste_count}x)`} />}
-                                                                                                {task.copy_detected && <FileText size={12} className="text-orange-500" title={`Question Copied (${task.copy_count}x)`} />}
+                                                                                                {task.focus_loss_count > 0 && <EyeOff size={11} className="text-red-500" title={`Focus Lost: ${task.focus_loss_count}x`} />}
                                                                                             </div>
                                                                                             <div className="flex items-center gap-1.5">
                                                                                                 <span className="font-mono" style={{ color: COLORS.teal }}>{Math.round(task.time_spent_seconds) || 0}s</span>
-                                                                                                <span style={{ color: COLORS.success, fontSize: '10px', fontWeight: 600 }}>{Math.round(task.reasoning_depth || 0)}%</span>
                                                                                                 <span style={{ color: task.decision_changes > 2 ? COLORS.warning : COLORS.textMuted }}>{task.decision_changes || 0}Δ</span>
                                                                                             </div>
                                                                                         </div>
@@ -2081,6 +2113,11 @@ const LiveAssessment = () => {
                                                                         <div className="text-[10px]" style={{ color: COLORS.textMuted }}>
                                                                             Pattern: {displayData.behavioral_summary?.approach_pattern || 'Detecting...'}
                                                                         </div>
+                                                                        <div className="flex items-center gap-2 ml-auto">
+                                                                            {currentQuestion.focus_loss_count > 0 && <EyeOff size={11} className="text-red-500" title="Tab Switch" />}
+                                                                            {currentQuestion.paste_count > 0 && <Clipboard size={11} className="text-red-500" title="Paste" />}
+                                                                            {currentQuestion.copy_count > 0 && <Copy size={11} className="text-orange-500" title="Copy" />}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
 
@@ -2181,6 +2218,9 @@ const LiveAssessment = () => {
                                                                                                 </div>
                                                                                             </div>
                                                                                             <div className="flex items-center gap-2">
+                                                                                                {task.focus_loss_count > 0 && <EyeOff size={10} className="text-red-500" />}
+                                                                                                {task.paste_count > 0 && <Clipboard size={10} className="text-red-500" />}
+                                                                                                {task.copy_count > 0 && <Copy size={10} className="text-orange-500" />}
                                                                                                 <span className="text-[10px]" style={{ color: task.decision_changes > 2 ? COLORS.warning : COLORS.textMuted }}>
                                                                                                     {task.decision_changes || 0} changes
                                                                                                 </span>
@@ -2217,6 +2257,9 @@ const LiveAssessment = () => {
                                                                                     <div>Changes: <span style={{ color: COLORS.textPrimary }}>{histTask.decision_changes || 0}</span></div>
                                                                                     <div>Pattern: <span style={{ color: COLORS.textPrimary }}>{histTask.observed_pattern || '—'}</span></div>
                                                                                     <div>Explanation: <span style={{ color: COLORS.textPrimary }}>{histTask.explanation_word_count || 0} words</span></div>
+                                                                                    {histTask.focus_loss_count > 0 && <div className="text-red-500 font-bold">Tab switches: {histTask.focus_loss_count}</div>}
+                                                                                    {histTask.paste_count > 0 && <div className="text-red-500 font-bold">Pastes detected: {histTask.paste_count}</div>}
+                                                                                    {histTask.copy_count > 0 && <div className="text-orange-500 font-bold">Copy events: {histTask.copy_count}</div>}
                                                                                 </div>
                                                                                 {histTask.scenario && (
                                                                                     <p className="mt-2 text-[10px] leading-relaxed" style={{ color: COLORS.textSecondary }}>
@@ -2285,6 +2328,57 @@ const LiveAssessment = () => {
                                                             <span className="text-sm" style={{ color: COLORS.textMuted }}>Analyzing skills...</span>
                                                         </div>
                                                     )}
+                                                </div>
+
+                                                {/* === REAL-TIME EVENT FEED === */}
+                                                <div className="p-5 rounded-2xl border shadow-sm" style={{ background: `linear-gradient(135deg, ${COLORS.cardBg} 0%, ${COLORS.accentLight} 100%)`, borderColor: COLORS.accent, boxShadow: '0 10px 24px rgba(59, 130, 246, 0.12)' }}>
+                                                    <div className="flex items-center justify-between mb-4">
+                                                        <div className="flex items-center gap-2">
+                                                            <Activity className="w-4 h-4" style={{ color: COLORS.accent }} />
+                                                            <h4 className="text-xs font-semibold uppercase tracking-wider" style={{ color: COLORS.accent }}>Real-time Activity Log</h4>
+                                                        </div>
+                                                        <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: COLORS.accentLight, color: COLORS.accent }}>{recentEvents.length} events</span>
+                                                    </div>
+
+                                                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                                        {recentEvents.length > 0 ? (
+                                                            recentEvents.map((event, i) => (
+                                                                <div key={event.id || i} className="flex gap-3 py-2 border-b last:border-0" style={{ borderColor: COLORS.borderLight }}>
+                                                                    <div className="mt-0.5 shrink-0">
+                                                                        {event.type === 'paste_detected' && <Clipboard className="w-3.5 h-3.5 text-red-500" />}
+                                                                        {event.type === 'copy_detected' && <FileText className="w-3.5 h-3.5 text-orange-500" />}
+                                                                        {event.type === 'focus_lost' && <EyeOff className="w-3.5 h-3.5 text-red-600" />}
+                                                                        {event.type === 'focus_gained' && <Eye className="w-3.5 h-3.5 text-green-500" />}
+                                                                        {event.type === 'idle_detected' && <Clock className="w-3.5 h-3.5 text-yellow-500" />}
+                                                                    </div>
+                                                                    <div className="flex-1">
+                                                                        <div className="flex justify-between items-start">
+                                                                            <span className="text-[11px] font-semibold" style={{ color: COLORS.textPrimary }}>
+                                                                                {event.type === 'paste_detected' ? 'Text Pasted' :
+                                                                                    event.type === 'copy_detected' ? 'Question Copied' :
+                                                                                        event.type === 'focus_lost' ? 'Tab Switched (Focus Lost)' :
+                                                                                            event.type === 'focus_gained' ? 'Tab Switched (Focus Gained)' :
+                                                                                                event.type === 'idle_detected' ? 'Extended Pause' : event.type}
+                                                                            </span>
+                                                                            <span className="text-[9px]" style={{ color: COLORS.textMuted }}>{new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                                                                        </div>
+                                                                        <p className="text-[10px] mt-0.5" style={{ color: COLORS.textSecondary }}>
+                                                                            {event.type === 'paste_detected' && `Pasted ${event.payload.char_count || 0} characters into ${event.payload.source || 'field'}.`}
+                                                                            {event.type === 'copy_detected' && `Copied question text (${event.payload.char_count || 0} chars).`}
+                                                                            {event.type === 'focus_lost' && 'Candidate switched to another tab or application.'}
+                                                                            {event.type === 'focus_gained' && 'Candidate returned to the assessment tab.'}
+                                                                            {event.type === 'idle_detected' && `Inactivity detected for ${event.payload.duration || 0} seconds.`}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        ) : (
+                                                            <div className="flex flex-col items-center justify-center py-10 gap-2 opacity-50">
+                                                                <Activity className="w-8 h-8" style={{ color: COLORS.textMuted }} />
+                                                                <span className="text-xs" style={{ color: COLORS.textMuted }}>No live behavior events detected yet</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}

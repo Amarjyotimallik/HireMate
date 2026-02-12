@@ -273,8 +273,8 @@ const CandidateAssessment = () => {
             return;
         }
 
-        // HTTP fallback for critical events (task_completed, task_started)
-        const criticalEvents = ['task_completed', 'task_started'];
+        // HTTP fallback for critical events (behavioral events now included)
+        const criticalEvents = ['task_completed', 'task_started', 'paste_detected', 'copy_detected', 'focus_lost', 'focus_gained', 'idle_detected'];
         if (criticalEvents.includes(eventType)) {
             console.warn(`WebSocket not connected, using HTTP fallback for ${eventType}`);
             try {
@@ -355,6 +355,34 @@ const CandidateAssessment = () => {
     // Reset idle timer on any interaction
     const handleInteraction = () => {
         setIdleTimer(0);
+    };
+
+    const handlePaste = (e) => {
+        // Anti-Cheat: Detect paste events
+        const pastedText = e.clipboardData?.getData('text') || '';
+
+        // Low threshold to catch any paste (as per plan)
+        if (pastedText.length >= 1 && currentTask) {
+            sendEvent('paste_detected', currentTask.id, {
+                char_count: pastedText.length,
+                source: 'reasoning',
+                text_preview: pastedText.substring(0, 50)
+            });
+        }
+        handleInteraction();
+    };
+
+    const handleCopy = (e) => {
+        // Anti-Cheat: Detect copying question text
+        const copiedText = document.getSelection().toString();
+        // Lowered threshold to 5 chars to ensure it catches most copy attempts
+        if (copiedText.length > 5 && currentTask) {
+            sendEvent('copy_detected', currentTask.id, {
+                text_preview: copiedText.substring(0, 50),
+                char_count: copiedText.length,
+                source: 'question_text'
+            });
+        }
     };
 
     const handleOptionSelect = (optionIndex) => {
@@ -765,17 +793,7 @@ const CandidateAssessment = () => {
                                         </div>
                                         <h2
                                             className="text-lg sm:text-2xl font-semibold text-white leading-relaxed cursor-text selection:bg-red-500/30"
-                                            onCopy={(e) => {
-                                                // Anti-Cheat: Detect copying question text
-                                                const copiedText = document.getSelection().toString();
-                                                if (copiedText.length > 10 && currentTask) {
-                                                    sendEvent('copy_detected', currentTask.id, {
-                                                        text_preview: copiedText.substring(0, 50),
-                                                        char_count: copiedText.length,
-                                                        source: 'question_text'
-                                                    });
-                                                }
-                                            }}
+                                            onCopy={handleCopy}
                                         >
                                             {currentTask.scenario}
                                         </h2>
@@ -825,18 +843,8 @@ const CandidateAssessment = () => {
                                         setReasoning(e.target.value);
                                         handleInteraction();
                                     }}
-                                    onPaste={(e) => {
-                                        // Anti-Cheat: Detect paste events
-                                        const pastedText = e.clipboardData?.getData('text') || '';
-                                        if (pastedText.length > 50 && currentTask) {
-                                            sendEvent('paste_detected', currentTask.id, {
-                                                char_count: pastedText.length,
-                                                source: 'reasoning'
-                                            });
-                                        }
-                                        handleInteraction();
-                                    }}
-                                    placeholder="Share your thought process... (minimum 20 characters)"
+                                    onPaste={handlePaste}
+                                    placeholder="Explain your thinking... (Required to proceed)"
                                     className={`input-field w-full min-h-[100px] resize-none transition-all duration-200 ${reasoning.length > 0 && reasoning.length < 20 ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'focus:border-primary-500 focus:ring-primary-500/20'}`}
                                     required
                                 />
