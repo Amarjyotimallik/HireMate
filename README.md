@@ -22,15 +22,7 @@ HireMate is the world’s first **Behavioral Observation Engine** for technical 
 
 **Configuration (.env):**
 **Configuration (.env):**
-Rename `.env.example` to `.env`.
-
-> **⚠️ Judges & Recruiters**: We have included the API keys below for your convenience. **Please remove the extra space** inside the key values when copying them to `.env`. This is to prevent automatic security blocks.
-
-*   **GROQ_API_KEY** (LLM): `gsk_ 3ellMzQtpi6oOpNCVevnWGdyb3FYlCrPd7AEE2Xhy7iAYKjukrqG`
-*   **GEMINI_API_KEY** (Backup): `AIza SyCSxNyteDQedvP3oLshB7uqsUAP-uptpEg`
-*   **RESEND_API_KEY** (Email): `re_ 8nLkFzDY_3h6e2p8jQxd1D2vUYDjCqDy5`
-*   **REDIS_URL** (Task Queue): `rediss://default:AdHiAAIncDJlMTE5MWY4Yjc5ODQ0ZWMzODAzMGU0ODZjMWE3Y2JkM3AyNTM3MzA@pleasant-pig-53730.upstash.io:6379?ssl_cert_reqs=none`
-) and included the **trained ML models** and **synthetic dataset** for immediate testing.
+Rename `.env.example` to `.env`. Update the Keys.
 
 ### Prerequisites
 *   **Node.js** (v18+)
