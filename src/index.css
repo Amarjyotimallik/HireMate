@@ -1,0 +1,395 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme Custom Properties */
+:root {
+  /* Light mode colors */
+  --bg-primary: 248 250 252;
+  --bg-secondary: 241 245 249;
+  --bg-card: 255 255 255;
+  --text-primary: 31 41 55;
+  --text-secondary: 107 114 128;
+  --text-muted: 156 163 175;
+  --border-color: 229 231 235;
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --nav-bg: 255 255 255;
+}
+
+.dark {
+  /* Dark mode colors - Pure Black */
+  --bg-primary: 0 0 0;
+  --bg-secondary: 10 10 10;
+  --bg-card: 10 10 10;
+  --text-primary: 250 250 250;
+  --text-secondary: 212 212 212;
+  --text-muted: 163 163 163;
+  --border-color: 38 38 38;
+  --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --nav-bg: 10 10 10;
+}
+
+/* Smooth transition for theme changes */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.15s ease;
+}
+
+
+@layer base {
+  body {
+    @apply bg-black text-neutral-100 font-sans;
+    min-height: 100vh;
+  }
+
+  .dark body {
+    @apply bg-black;
+  }
+
+  * {
+    @apply border-neutral-800;
+  }
+}
+
+@layer components {
+
+  /* Glass morphism card */
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl shadow-glass;
+  }
+
+  .glass-card-hover {
+    @apply glass-card hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:shadow-xl hover:scale-[1.02];
+  }
+
+  /* Gradient button */
+  .btn-gradient {
+    @apply bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary-500 text-primary-400 font-semibold py-2 px-6 rounded-lg hover:bg-primary-500 hover:text-white transition-all duration-300;
+  }
+
+  /* Input fields */
+  .input-field {
+    @apply glass-card px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-gray-100 placeholder-gray-400;
+  }
+
+  /* Section headers */
+  .section-header {
+    @apply text-3xl font-bold bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent;
+  }
+
+  /* Stats card */
+  .stat-card {
+    @apply glass-card p-6 hover:bg-white/10 transition-all duration-300 cursor-pointer;
+  }
+
+  /* Navigation link active state */
+  .nav-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-gray-300 hover:text-white hover:bg-white/10;
+  }
+
+  .nav-link-active {
+    @apply nav-link bg-gradient-to-r from-primary-600/30 to-secondary-600/30 text-white border-l-4 border-primary-500;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-secondary-400 bg-clip-text text-transparent;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* ===== Animated Avatar Animations ===== */
+  .animate-avatar-float {
+    animation: avatarFloat 4s ease-in-out infinite;
+  }
+
+  .animate-avatar-blob {
+    animation: avatarBlobRotate 8s ease-in-out infinite;
+  }
+
+  .animate-avatar-morph {
+    animation: avatarMorph 6s ease-in-out infinite;
+  }
+
+  .animate-avatar-blink {
+    animation: avatarBlink 4s ease-in-out infinite;
+  }
+
+  .animate-avatar-scale-pulse {
+    animation: avatarScalePulse 3s ease-in-out infinite;
+  }
+
+  .animate-avatar-badge-float {
+    animation: avatarBadgeFloat 3s ease-in-out infinite;
+  }
+
+  .animate-avatar-icon-float {
+    animation: avatarIconFloat 3.5s ease-in-out infinite;
+  }
+
+  .animate-avatar-sparkle {
+    animation: avatarSparkle 2s ease-in-out infinite;
+  }
+
+  .animate-avatar-particle {
+    animation: avatarParticle 3s ease-in-out infinite;
+  }
+
+  @keyframes avatarFloat {
+
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-14px);
+    }
+  }
+
+  @keyframes avatarBlobRotate {
+
+    0%,
+    100% {
+      transform: rotate(0deg) scale(1);
+    }
+
+    25% {
+      transform: rotate(3deg) scale(1.02);
+    }
+
+    50% {
+      transform: rotate(0deg) scale(1.04);
+    }
+
+    75% {
+      transform: rotate(-3deg) scale(1.02);
+    }
+  }
+
+  @keyframes avatarMorph {
+
+    0%,
+    100% {
+      d: path("M170,30 C250,30 310,80 310,170 C310,260 250,320 170,310 C90,300 30,260 30,170 C30,80 90,30 170,30 Z");
+    }
+
+    33% {
+      d: path("M170,25 C260,35 315,90 305,175 C295,260 240,315 165,315 C90,315 35,255 35,170 C35,85 80,15 170,25 Z");
+    }
+
+    66% {
+      d: path("M175,35 C255,25 310,85 310,165 C310,245 255,310 170,315 C85,320 30,260 35,175 C40,90 95,45 175,35 Z");
+    }
+  }
+
+  @keyframes avatarBlink {
+
+    0%,
+    42%,
+    44%,
+    100% {
+      transform: scaleY(1);
+    }
+
+    43% {
+      transform: scaleY(0.05);
+    }
+  }
+
+  @keyframes avatarScalePulse {
+
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+
+    50% {
+      transform: scale(1.03);
+      opacity: 0.9;
+    }
+  }
+
+  @keyframes avatarBadgeFloat {
+
+    0%,
+    100% {
+      transform: translateY(-25%) translateX(0px);
+    }
+
+    50% {
+      transform: translateY(-35%) translateX(5px);
+    }
+  }
+
+  @keyframes avatarIconFloat {
+
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+
+    50% {
+      transform: translateY(-8px) rotate(5deg);
+    }
+  }
+
+  @keyframes avatarSparkle {
+
+    0%,
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+
+    25% {
+      transform: scale(0.6) rotate(45deg);
+      opacity: 0.4;
+    }
+
+    50% {
+      transform: scale(1.2) rotate(90deg);
+      opacity: 1;
+    }
+
+    75% {
+      transform: scale(0.8) rotate(135deg);
+      opacity: 0.6;
+    }
+  }
+
+  @keyframes avatarParticle {
+
+    0%,
+    100% {
+      transform: translateY(0px) scale(1);
+      opacity: 0.8;
+    }
+
+    50% {
+      transform: translateY(-12px) scale(1.3);
+      opacity: 0.4;
+    }
+  }
+
+  /* Speech Bubble Animation */
+  .animate-avatar-speech-bubble {
+    animation: avatarSpeechBubble 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s forwards;
+    opacity: 0;
+  }
+
+  @keyframes avatarSpeechBubble {
+    0% {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.3) translateY(10px);
+    }
+
+    70% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1.05) translateY(0px);
+    }
+
+    100% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1) translateY(0px);
+    }
+  }
+}
+
+.minimal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.5) transparent;
+}
+
+.minimal-scrollbar::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 9999px;
+}
+
+.minimal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-neutral-900;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/20 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-white/40;
+}

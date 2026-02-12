@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 80" width="100" height="80">
+  <!-- Three People Business Icon -->
+  <!-- Center person (larger) -->
+  <circle cx="50" cy="18" r="12" fill="#2B3A67"/>
+  
+  <!-- Left person (smaller) -->
+  <circle cx="22" cy="22" r="8" fill="#2B3A67"/>
+  
+  <!-- Right person (smaller) -->
+  <circle cx="78" cy="22" r="8" fill="#2B3A67"/>
+  
+  <!-- Business suit / body section -->
+  <!-- Left shoulder -->
+  <path d="M5 75 L22 38 L35 50 L25 75 Z" fill="#A8C0E8"/>
+  
+  <!-- Center left shoulder -->
+  <path d="M25 75 L35 50 L50 55 L45 75 Z" fill="#6B8CCE"/>
+  
+  <!-- Center tie -->
+  <path d="M45 55 L50 50 L55 55 L52 75 L48 75 Z" fill="#A8C0E8"/>
+  
+  <!-- Center right shoulder -->
+  <path d="M55 75 L50 55 L65 50 L75 75 Z" fill="#6B8CCE"/>
+  
+  <!-- Right shoulder -->
+  <path d="M75 75 L65 50 L78 38 L95 75 Z" fill="#A8C0E8"/>
+</svg>

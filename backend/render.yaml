@@ -1,0 +1,50 @@
+# Build Render.com Deployment Configuration
+# https://render.com/docs/yaml-spec
+
+services:
+  - type: web
+    name: hiremate-api
+    env: python
+    region: oregon  # Change as needed
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    
+    envVars:
+      # Database (set in Render dashboard)
+      - key: MONGODB_URL
+        sync: false  # Set manually in Render dashboard
+      - key: MONGODB_DATABASE
+        value: hiremate
+      
+      # Security
+      - key: JWT_SECRET
+        generateValue: true  # Auto-generate secure secret
+      - key: DEBUG
+        value: "false"
+      - key: DEV_MODE
+        value: "false"  # IMPORTANT: Disable for production
+      
+      # CORS - Set to your Netlify URL
+      - key: CORS_ORIGINS
+        sync: false  # Set to: https://your-app.netlify.app
+      
+      # AI Services (set in Render dashboard)
+      - key: GROQ_API_KEY
+        sync: false
+      
+      # Email Service (set in Render dashboard)
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM_ADDRESS
+        value: "HireMate <onboarding@resend.dev>"
+      
+      # Token settings
+      - key: ASSESSMENT_TOKEN_EXPIRE_DAYS
+        value: "7"
+      - key: IDLE_THRESHOLD_MS
+        value: "5000"
+    
+    autoDeploy: true  # Auto-deploy on push to main branch
+

@@ -1,0 +1,96 @@
+================================================================================
+                    HIREMATE - SERVICE STARTUP GUIDE
+================================================================================
+
+This guide provides step-by-step instructions to start the HireMate application
+(Backend first, then Frontend).
+
+================================================================================
+PREREQUISITES
+================================================================================
+- Python 3.10+ installed
+- Node.js 18+ and npm installed
+- MongoDB running (local or cloud - check your .env file)
+
+================================================================================
+STEP 1: OPEN TWO TERMINAL WINDOWS
+================================================================================
+You will need two separate terminal/command prompt windows:
+- Terminal 1: For Backend
+- Terminal 2: For Frontend
+
+================================================================================
+STEP 2: BACKEND SETUP (Terminal 1)
+================================================================================
+
+2.1 Navigate to the backend folder:
+    cd "c:\Users\debas\OneDrive\Desktop\Xplora Innovation\HireMate\backend"
+
+2.2 Create a virtual environment (first time only):
+    python -m venv venv
+
+2.3 Activate the virtual environment:
+    venv\Scripts\activate
+
+2.4 Install Python dependencies:
+    pip install -r requirements.txt
+
+2.5 Start the backend server:
+    uvicorn app.main:app --reload --port 8000
+
+    The backend will be running at: http://localhost:8000
+    API docs available at: http://localhost:8000/docs
+
+================================================================================
+STEP 3: FRONTEND SETUP (Terminal 2)
+================================================================================
+
+3.1 Navigate to the HireMate root folder:
+    cd "c:\Users\debas\OneDrive\Desktop\Xplora Innovation\HireMate"
+
+3.2 Install Node.js dependencies:
+    npm install
+
+3.3 Start the frontend development server:
+    npm run dev
+
+    The frontend will be running at: http://localhost:5173
+
+================================================================================
+QUICK START (After First-Time Setup)
+================================================================================
+If you've already installed dependencies, here's the quick version:
+
+TERMINAL 1 (Backend):
+    cd "c:\Users\debas\OneDrive\Desktop\Xplora Innovation\HireMate\backend"
+    venv\Scripts\activate
+    uvicorn app.main:app --reload --port 8000
+
+TERMINAL 2 (Frontend):
+    cd "c:\Users\debas\OneDrive\Desktop\Xplora Innovation\HireMate"
+    npm run dev
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+1. If Python virtual environment doesn't activate:
+   - Try: .\venv\Scripts\activate
+   - Or run PowerShell as Administrator and execute:
+     Set-ExecutionPolicy RemoteSigned
+
+2. If npm install fails:
+   - Delete node_modules folder and package-lock.json
+   - Run: npm install
+
+3. If backend fails to start:
+   - Check if port 8000 is already in use
+   - Verify MongoDB connection in .env file
+
+4. If frontend fails to connect to backend:
+   - Ensure backend is running first
+   - Check VITE_API_URL in .env file
+
+================================================================================
+                              END OF GUIDE
+================================================================================

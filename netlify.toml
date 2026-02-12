@@ -1,0 +1,16 @@
+# Netlify configuration for React SPA with React Router
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Handle SPA routing - redirect all paths to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Environment variable placeholders (set in Netlify dashboard)
+[build.environment]
+  NODE_VERSION = "20"
